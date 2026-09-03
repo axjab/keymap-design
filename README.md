@@ -2,9 +2,13 @@
 # Silakka54 Keymap Design Principles and Initial Specification
 
 > Status: Initial design
+> 
 > Scope: Physical key placement, keycap semantics, and editing/modifier strategy
+> 
 > Target: Silakka54 split/columnar keyboard
+> 
 > Primary use case: Keyboard-driven software development, terminal-heavy workflow
+> 
 > Design philosophy: Preserve familiar topology where practical; minimize cognitive load; optimize physical access according to intended steady-state usage.
 
 ---
