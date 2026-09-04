@@ -44,7 +44,7 @@ L	L		R3C10
 ;	;		R3C11	
 :	SHIFT+;	Shifted variant of ;	R3C11	
 '	'	Physical key	R3C12	Shift produces double quote
-"	SHIFT+'	Shifted variant of \'	R3C12		
+double quote	SHIFT+'	Shifted variant of '	R3C12		
 Shift	TAP: One-shot; HOLD: Normal; DOUBLE-TAP: Caps Lock	Stateful Shift	R4C1	Tap again to disable Caps Lock
 Z	Z		R4C2	
 X	X		R4C3	
