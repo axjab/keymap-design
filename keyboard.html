@@ -1,0 +1,1692 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Silakka54 · Keymap Editor</title>
+<style>
+:root {
+  --bg: #0d1117;
+  --panel: #161b22;
+  --panel-2: #1c2129;
+  --border: #30363d;
+  --border-soft: #21262d;
+  --text: #c9d1d9;
+  --text-dim: #8b949e;
+  --text-faint: #6e7681;
+  --accent: #58a6ff;
+  --accent-dim: #1f6feb;
+  --purple: #a371f7;
+  --purple-dim: #3d2a5c;
+  --green: #3fb950;
+  --orange: #d29922;
+  --red: #f85149;
+  --mono: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
+  --sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--sans);
+  min-height: 100vh;
+  padding: 32px 16px 64px;
+}
+
+.wrap {
+  max-width: 1180px;
+  margin: 0 auto;
+}
+
+header.app-header {
+  text-align: center;
+  margin-bottom: 24px;
+}
+
+header.app-header h1 {
+  font-size: 22px;
+  font-weight: 600;
+  margin: 0 0 4px;
+  letter-spacing: -0.01em;
+}
+
+header.app-header p.sub {
+  color: var(--text-dim);
+  font-size: 13px;
+  margin: 0;
+}
+
+/* ===== Controls ===== */
+.controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: center;
+  align-items: center;
+  margin: 20px 0;
+}
+
+.btn {
+  background: var(--panel-2);
+  border: 1px solid var(--border);
+  color: var(--text);
+  font-family: var(--sans);
+  font-size: 13px;
+  padding: 6px 12px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background-color 0.12s, border-color 0.12s;
+}
+.btn:hover { background: #262c36; border-color: #444c56; }
+.btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.btn.active { background: var(--accent-dim); border-color: var(--accent); color: #fff; }
+.btn.primary { background: var(--accent-dim); border-color: var(--accent-dim); color: #fff; }
+.btn.primary:hover { background: #2a7ae2; }
+.btn.danger { border-color: #6e2b28; color: #ffa198; }
+.btn.danger:hover { background: #3d1f1e; }
+.btn:disabled { opacity: 0.45; cursor: not-allowed; }
+
+.divider-v {
+  width: 1px;
+  height: 20px;
+  background: var(--border);
+  margin: 0 4px;
+}
+
+.status-line {
+  text-align: center;
+  color: var(--text-dim);
+  font-size: 13px;
+  margin: 4px 0 20px;
+  font-family: var(--mono);
+}
+
+.modified-indicator {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  font-family: var(--mono);
+  padding: 3px 10px;
+  border-radius: 12px;
+  border: 1px solid var(--border);
+}
+.modified-indicator.dirty { color: var(--orange); border-color: #4a3a1a; background: #2a2110; }
+.modified-indicator.clean { color: var(--green); border-color: #1c3a24; background: #0f1f14; }
+
+/* ===== Keyboard ===== */
+.kb-scroll {
+  overflow-x: auto;
+  padding: 20px 0 30px;
+}
+
+.kb-enclosure {
+  background: linear-gradient(180deg, #1a2028 0%, #12161c 100%);
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  padding: 28px 24px;
+  margin: 0 auto;
+  width: max-content;
+  box-shadow: 0 20px 50px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.03);
+}
+
+.kb-grid {
+  position: relative;
+  width: calc(13 * 64px);
+  height: calc(5 * 60px);
+}
+
+.key {
+  position: absolute;
+  width: 58px;
+  height: 54px;
+  background: linear-gradient(180deg, #2d333b 0%, #22272e 100%);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  color: var(--text);
+  font-size: 13px;
+  cursor: pointer;
+  user-select: none;
+  transition: transform 0.06s, background-color 0.12s, border-color 0.12s, box-shadow 0.12s;
+  box-shadow: 0 2px 0 rgba(0,0,0,0.35), inset 0 1px 0 rgba(255,255,255,0.04);
+  touch-action: none;
+}
+.key:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+.key .label { font-weight: 500; font-size: 13px; line-height: 1.1; text-align: center; padding: 0 3px; }
+.key .code {
+  position: absolute; bottom: 3px; left: 5px;
+  font-family: var(--mono); font-size: 7px; color: var(--text-faint);
+  max-width: 50px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.key .matrix {
+  position: absolute; top: 3px; right: 4px;
+  font-family: var(--mono); font-size: 7px; color: var(--text-faint);
+}
+
+.key.pressed { background: linear-gradient(180deg, #1f6feb 0%, #1857b8 100%); border-color: #388bfd; transform: translateY(1px); box-shadow: 0 1px 0 rgba(0,0,0,0.35); }
+.key.layer-active { background: linear-gradient(180deg, #5f3aa8 0%, #4a2c85 100%); border-color: var(--purple); }
+.key.transparent {
+  background-image: repeating-linear-gradient(135deg, #262c36 0 6px, #22272e 6px 12px);
+  color: var(--text-faint);
+}
+.key.transparent .label { font-size: 10px; }
+
+.key.editing {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+  box-shadow: 0 0 0 4px rgba(88,166,255,0.18), 0 2px 0 rgba(0,0,0,0.35);
+}
+
+.key .modified-dot {
+  position: absolute;
+  top: -4px; right: -4px;
+  width: 9px; height: 9px;
+  border-radius: 50%;
+  background: var(--orange);
+  border: 1.5px solid var(--bg);
+  display: none;
+}
+.key.is-modified .modified-dot { display: block; }
+
+/* ===== Info cards ===== */
+.cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 14px;
+  margin-top: 28px;
+}
+
+.card {
+  background: var(--panel);
+  border: 1px solid var(--border-soft);
+  border-radius: 10px;
+  padding: 16px 18px;
+}
+.card h3 {
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--text-dim);
+  margin: 0 0 10px;
+  font-weight: 600;
+}
+.card ul { margin: 0; padding-left: 18px; font-size: 13px; line-height: 1.7; color: var(--text); }
+.card p { font-size: 13px; line-height: 1.6; color: var(--text); margin: 0 0 8px; }
+.card code { font-family: var(--mono); font-size: 12px; background: var(--panel-2); padding: 1px 5px; border-radius: 4px; color: var(--accent); }
+.card .kv { font-family: var(--mono); font-size: 12px; color: var(--text-dim); line-height: 1.8; }
+.legend-row { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; }
+.legend-swatch { width: 14px; height: 14px; border-radius: 4px; border: 1px solid var(--border); flex-shrink: 0; }
+
+/* ===== Modal ===== */
+.modal-overlay {
+  position: fixed; inset: 0;
+  background: rgba(1,4,9,0.72);
+  display: flex; align-items: center; justify-content: center;
+  z-index: 100;
+  padding: 20px;
+}
+.modal-overlay[hidden] { display: none; }
+
+.modal {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  width: 100%;
+  max-width: 560px;
+  max-height: 86vh;
+  overflow-y: auto;
+  box-shadow: 0 30px 80px rgba(0,0,0,0.6);
+}
+
+.modal-header {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--border-soft);
+  position: sticky; top: 0; background: var(--panel); z-index: 2;
+}
+.modal-header h2 { font-size: 15px; margin: 0; font-weight: 600; }
+.modal-close {
+  background: none; border: none; color: var(--text-dim);
+  font-size: 18px; cursor: pointer; line-height: 1; padding: 4px;
+}
+.modal-close:hover { color: var(--text); }
+
+.modal-body { padding: 18px 20px 20px; }
+
+.key-meta-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px 16px;
+  margin-bottom: 18px;
+  font-size: 13px;
+}
+.key-meta-grid .meta-item .meta-label { color: var(--text-faint); font-size: 11px; text-transform: uppercase; letter-spacing: 0.03em; margin-bottom: 2px; }
+.key-meta-grid .meta-item .meta-value { font-family: var(--mono); color: var(--text); }
+
+.current-code-box {
+  background: var(--panel-2);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 10px 14px;
+  font-family: var(--mono);
+  font-size: 15px;
+  color: var(--accent);
+  margin-bottom: 16px;
+  text-align: center;
+}
+
+.picker-search {
+  width: 100%;
+  background: var(--panel-2);
+  border: 1px solid var(--border);
+  color: var(--text);
+  padding: 8px 12px;
+  border-radius: 8px;
+  font-size: 13px;
+  margin-bottom: 12px;
+  font-family: var(--sans);
+}
+.picker-search:focus { outline: none; border-color: var(--accent); }
+
+.picker-categories {
+  display: flex; flex-wrap: wrap; gap: 6px;
+  margin-bottom: 12px;
+}
+.picker-cat-btn {
+  background: var(--panel-2); border: 1px solid var(--border); color: var(--text-dim);
+  font-size: 11px; padding: 4px 9px; border-radius: 12px; cursor: pointer;
+}
+.picker-cat-btn.active { background: var(--accent-dim); color: #fff; border-color: var(--accent-dim); }
+
+.picker-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(84px, 1fr));
+  gap: 6px;
+  max-height: 220px;
+  overflow-y: auto;
+  padding-right: 4px;
+  margin-bottom: 16px;
+}
+.picker-item {
+  background: var(--panel-2);
+  border: 1px solid var(--border);
+  color: var(--text);
+  font-family: var(--mono);
+  font-size: 11px;
+  padding: 8px 4px;
+  border-radius: 6px;
+  cursor: pointer;
+  text-align: center;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.picker-item:hover { border-color: var(--accent); }
+.picker-item.selected { background: var(--accent-dim); border-color: var(--accent); color: #fff; }
+
+.advanced-entry label { font-size: 12px; color: var(--text-dim); display: block; margin-bottom: 6px; }
+.advanced-entry input {
+  width: 100%;
+  background: var(--panel-2);
+  border: 1px solid var(--border);
+  color: var(--accent);
+  font-family: var(--mono);
+  font-size: 13px;
+  padding: 8px 12px;
+  border-radius: 8px;
+}
+.advanced-entry input:focus { outline: none; border-color: var(--accent); }
+.advanced-hint { font-size: 11px; color: var(--text-faint); margin-top: 6px; }
+
+.modal-footer {
+  display: flex; justify-content: flex-end; gap: 8px;
+  padding-top: 16px; margin-top: 16px; border-top: 1px solid var(--border-soft);
+}
+
+/* Layer manager modal specifics */
+.layer-list { display: flex; flex-direction: column; gap: 8px; margin-bottom: 16px; }
+.layer-row {
+  display: flex; align-items: center; gap: 8px;
+  background: var(--panel-2); border: 1px solid var(--border);
+  border-radius: 8px; padding: 8px 10px;
+}
+.layer-row input.layer-name-input {
+  flex: 1; background: transparent; border: none; color: var(--text);
+  font-size: 13px; font-family: var(--sans);
+}
+.layer-row input.layer-name-input:focus { outline: none; }
+.layer-row .layer-index-badge {
+  font-family: var(--mono); font-size: 11px; color: var(--text-faint);
+  background: var(--panel); padding: 2px 6px; border-radius: 4px;
+}
+.layer-row .btn { padding: 3px 9px; font-size: 11px; }
+
+/* Export modal */
+.export-tabs { display: flex; gap: 6px; margin-bottom: 12px; }
+.export-tab {
+  background: var(--panel-2); border: 1px solid var(--border); color: var(--text-dim);
+  font-size: 12px; padding: 5px 12px; border-radius: 6px; cursor: pointer;
+}
+.export-tab.active { background: var(--accent-dim); color: #fff; border-color: var(--accent-dim); }
+.export-output {
+  background: #010409;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 14px;
+  font-family: var(--mono);
+  font-size: 11.5px;
+  line-height: 1.6;
+  color: #a5d6ff;
+  white-space: pre;
+  overflow-x: auto;
+  max-height: 340px;
+  overflow-y: auto;
+}
+.import-textarea {
+  width: 100%;
+  min-height: 160px;
+  background: #010409;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 12px;
+  color: var(--text);
+  font-family: var(--mono);
+  font-size: 12px;
+  resize: vertical;
+}
+.import-textarea:focus { outline: none; border-color: var(--accent); }
+.io-message { font-size: 12px; margin-top: 8px; padding: 8px 10px; border-radius: 6px; }
+.io-message.ok { background: #0f1f14; color: var(--green); border: 1px solid #1c3a24; }
+.io-message.err { background: #2a1414; color: var(--red); border: 1px solid #4a1f1f; }
+
+.confirm-body p { font-size: 13px; line-height: 1.6; color: var(--text); }
+.confirm-body .warn-box {
+  background: #2a2110; border: 1px solid #4a3a1a; color: var(--orange);
+  border-radius: 8px; padding: 10px 12px; font-size: 12px; margin-top: 10px;
+}
+
+.sr-only {
+  position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px;
+  overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; border: 0;
+}
+
+@media (max-width: 640px) {
+  .modal { max-width: 100%; }
+  .key-meta-grid { grid-template-columns: 1fr; }
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="app-header">
+    <h1>Silakka54 Keymap Editor</h1>
+    <p class="sub">Double-click a key to edit it · press <kbd>E</kbd> when focused · click keys or your physical keyboard to try the layout</p>
+  </header>
+
+  <div class="controls" id="mainControls"></div>
+  <div class="status-line" id="statusLine"></div>
+
+  <div class="kb-scroll">
+    <div class="kb-enclosure">
+      <div class="kb-grid" id="kbGrid"></div>
+    </div>
+  </div>
+
+  <div class="cards" id="infoCards"></div>
+</div>
+
+<!-- Key editor modal -->
+<div class="modal-overlay" id="editorOverlay" hidden>
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="editorTitle">
+    <div class="modal-header">
+      <h2 id="editorTitle">Edit key</h2>
+      <button class="modal-close" id="editorClose" aria-label="Close">✕</button>
+    </div>
+    <div class="modal-body" id="editorBody"></div>
+  </div>
+</div>
+
+<!-- Layer manager modal -->
+<div class="modal-overlay" id="layerOverlay" hidden>
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="layerTitle">
+    <div class="modal-header">
+      <h2 id="layerTitle">Manage layers</h2>
+      <button class="modal-close" id="layerClose" aria-label="Close">✕</button>
+    </div>
+    <div class="modal-body" id="layerBody"></div>
+  </div>
+</div>
+
+<!-- Export/import modal -->
+<div class="modal-overlay" id="ioOverlay" hidden>
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="ioTitle">
+    <div class="modal-header">
+      <h2 id="ioTitle">Import / Export</h2>
+      <button class="modal-close" id="ioClose" aria-label="Close">✕</button>
+    </div>
+    <div class="modal-body" id="ioBody"></div>
+  </div>
+</div>
+
+<!-- Generic confirm modal -->
+<div class="modal-overlay" id="confirmOverlay" hidden>
+  <div class="modal" role="alertdialog" aria-modal="true" aria-labelledby="confirmTitle" style="max-width:420px;">
+    <div class="modal-header">
+      <h2 id="confirmTitle">Confirm</h2>
+      <button class="modal-close" id="confirmClose" aria-label="Close">✕</button>
+    </div>
+    <div class="modal-body confirm-body" id="confirmBody"></div>
+  </div>
+</div>
+
+<script>
+// ===================== AUTHORITATIVE PHYSICAL LAYOUT =====================
+// Source: keyboard.json "layouts.LAYOUT.layout" array, in exact order.
+// Index into this array === layoutIndex === LAYOUT() argument index.
+// NEVER reorder, sort, or derive this from symmetry.
+const PHYSICAL_LAYOUT_RAW = [
+  {matrix:[0,0],x:0,y:0},{matrix:[0,1],x:1,y:0},{matrix:[0,2],x:2,y:0},{matrix:[0,3],x:3,y:0},{matrix:[0,4],x:4,y:0},{matrix:[0,5],x:5,y:0},
+  {matrix:[5,5],x:7,y:0},{matrix:[5,4],x:8,y:0},{matrix:[5,3],x:9,y:0},{matrix:[5,2],x:10,y:0},{matrix:[5,1],x:11,y:0},{matrix:[5,0],x:12,y:0},
+
+  {matrix:[1,0],x:0,y:1},{matrix:[1,1],x:1,y:1},{matrix:[1,2],x:2,y:1},{matrix:[1,3],x:3,y:1},{matrix:[1,4],x:4,y:1},{matrix:[1,5],x:5,y:1},
+  {matrix:[6,5],x:7,y:1},{matrix:[6,4],x:8,y:1},{matrix:[6,3],x:9,y:1},{matrix:[6,2],x:10,y:1},{matrix:[6,1],x:11,y:1},{matrix:[6,0],x:12,y:1},
+
+  {matrix:[2,0],x:0,y:2},{matrix:[2,1],x:1,y:2},{matrix:[2,2],x:2,y:2},{matrix:[2,3],x:3,y:2},{matrix:[2,4],x:4,y:2},{matrix:[2,5],x:5,y:2},
+  {matrix:[7,5],x:7,y:2},{matrix:[7,4],x:8,y:2},{matrix:[7,3],x:9,y:2},{matrix:[7,2],x:10,y:2},{matrix:[7,1],x:11,y:2},{matrix:[7,0],x:12,y:2},
+
+  {matrix:[3,0],x:0,y:3},{matrix:[3,1],x:1,y:3},{matrix:[3,2],x:2,y:3},{matrix:[3,3],x:3,y:3},{matrix:[3,4],x:4,y:3},{matrix:[3,5],x:5,y:3},
+  {matrix:[8,5],x:7,y:3},{matrix:[8,4],x:8,y:3},{matrix:[8,3],x:9,y:3},{matrix:[8,2],x:10,y:3},{matrix:[8,1],x:11,y:3},{matrix:[8,0],x:12,y:3},
+
+  {matrix:[4,3],x:3,y:4},{matrix:[4,4],x:4,y:4},{matrix:[4,5],x:5,y:4},
+  {matrix:[9,5],x:7,y:4},{matrix:[9,4],x:8,y:4},{matrix:[9,3],x:9,y:4}
+];
+
+// physicalKeys[layoutIndex] = { layoutIndex, matrix:[r,c], x, y }
+const PHYSICAL_KEYS = PHYSICAL_LAYOUT_RAW.map((e, i) => ({
+  layoutIndex: i,
+  matrix: e.matrix,
+  x: e.x,
+  y: e.y
+}));
+
+// ===================== AUTHORITATIVE ORIGINAL KEYMAP =====================
+// Order === LAYOUT() argument order === layoutIndex. 54 entries per layer.
+const ORIGINAL_LAYERS = [
+  {
+    name: "Base",
+    keys: [
+      "KC_ESC","KC_1","KC_2","KC_3","KC_4","KC_5",
+      "KC_6","KC_7","KC_8","KC_9","KC_0","KC_MINS",
+
+      "KC_TAB","KC_Q","KC_W","KC_E","KC_R","KC_T",
+      "KC_Y","KC_U","KC_I","KC_O","KC_P","KC_BSPC",
+
+      "KC_LCTL","KC_A","KC_S","KC_D","KC_F","KC_G",
+      "KC_H","KC_J","KC_K","KC_L","KC_SCLN","KC_QUOT",
+
+      "KC_LSFT","KC_Z","KC_X","KC_C","KC_V","KC_B",
+      "KC_N","KC_M","KC_COMM","KC_DOT","KC_SLSH","KC_RSFT",
+
+      "KC_LGUI","MO(1)","KC_SPC",
+      "KC_ENT","KC_RCTL","KC_RALT"
+    ]
+  },
+  {
+    name: "Fn",
+    keys: [
+      "KC_GRV","KC_F1","KC_F2","KC_F3","KC_F4","KC_F5",
+      "KC_F6","KC_F7","KC_F8","KC_F9","KC_F10","KC_F11",
+
+      "KC_TRNS","KC_TRNS","KC_TRNS","KC_TRNS","KC_TRNS","KC_TRNS",
+      "KC_PGUP","KC_PGDN","KC_HOME","KC_END","KC_DEL","KC_F12",
+
+      "KC_TRNS","KC_TRNS","KC_TRNS","KC_TRNS","KC_TRNS","KC_TRNS",
+      "KC_LEFT","KC_DOWN","KC_UP","KC_RGHT","KC_LBRC","KC_RBRC",
+
+      "KC_TRNS","KC_TRNS","KC_TRNS","KC_TRNS","KC_TRNS","KC_TRNS",
+      "KC_TRNS","KC_TRNS","KC_TRNS","KC_TRNS","KC_TRNS","KC_TRNS",
+
+      "KC_TRNS","KC_TRNS","KC_TRNS",
+      "KC_TRNS","KC_TRNS","KC_TRNS"
+    ]
+  }
+];
+
+// Sanity (dev-time) assertions on the constants above.
+console.assert(PHYSICAL_KEYS.length === 54, "physical layout must have 54 keys");
+ORIGINAL_LAYERS.forEach((l,i) => console.assert(l.keys.length === 54, `layer ${i} must have 54 keys`));
+// ===================== KEYCODE LABELS =====================
+const SPECIAL_LABELS = {
+  KC_ESC:"Esc", KC_TAB:"Tab", KC_BSPC:"Backspace", KC_ENT:"Enter", KC_SPC:"Space",
+  KC_LCTL:"Ctrl", KC_LSFT:"Shift", KC_LGUI:"GUI", KC_LALT:"Alt",
+  KC_RCTL:"Ctrl", KC_RSFT:"Shift", KC_RGUI:"GUI", KC_RALT:"Alt",
+  KC_PGUP:"PgUp", KC_PGDN:"PgDn", KC_HOME:"Home", KC_END:"End", KC_DEL:"Del", KC_INS:"Ins",
+  KC_LEFT:"←", KC_DOWN:"↓", KC_UP:"↑", KC_RGHT:"→",
+  KC_LBRC:"[", KC_RBRC:"]", KC_GRV:"`", KC_MINS:"-", KC_EQL:"=",
+  KC_BSLS:"\\", KC_SCLN:";", KC_QUOT:"'", KC_COMM:",", KC_DOT:".", KC_SLSH:"/",
+  KC_TRNS:"TRNS", KC_NO:"—"
+};
+
+function humanLabel(code) {
+  if (SPECIAL_LABELS[code]) return SPECIAL_LABELS[code];
+  let m;
+  if ((m = /^KC_([A-Z])$/.exec(code))) return m[1];
+  if ((m = /^KC_(\d)$/.exec(code))) return m[1];
+  if ((m = /^KC_F(\d{1,2})$/.exec(code))) return "F" + m[1];
+  // layer / mod-tap / other parametrized expressions: show as-is
+  return code;
+}
+
+// ===================== KEYCODE PICKER CATALOG =====================
+const KEYCODE_CATALOG = {
+  "Letters": Array.from({length:26}, (_,i) => "KC_" + String.fromCharCode(65+i)),
+  "Numbers": Array.from({length:10}, (_,i) => "KC_" + i),
+  "Function keys": Array.from({length:24}, (_,i) => "KC_F" + (i+1)),
+  "Basic controls": ["KC_ESC","KC_TAB","KC_BSPC","KC_ENT","KC_SPC","KC_DEL","KC_INS"],
+  "Modifiers": ["KC_LCTL","KC_LSFT","KC_LGUI","KC_LALT","KC_RCTL","KC_RSFT","KC_RGUI","KC_RALT"],
+  "Navigation": ["KC_LEFT","KC_DOWN","KC_UP","KC_RGHT","KC_HOME","KC_END","KC_PGUP","KC_PGDN"],
+  "Punctuation": ["KC_GRV","KC_MINS","KC_EQL","KC_LBRC","KC_RBRC","KC_BSLS","KC_SCLN","KC_QUOT","KC_COMM","KC_DOT","KC_SLSH"],
+  "Mouse keys": ["KC_MS_UP","KC_MS_DOWN","KC_MS_LEFT","KC_MS_RIGHT","KC_MS_BTN1","KC_MS_BTN2","KC_MS_BTN3","KC_MS_WH_UP","KC_MS_WH_DOWN"],
+  "Layer keys": ["MO(1)","MO(2)","MO(3)","TG(1)","TG(2)","TO(1)","TO(2)","DF(1)","DF(2)","LT(1, KC_SPC)"],
+  "Transparent": ["KC_TRNS","KC_NO"],
+  "Special": [
+    "MT(MOD_LCTL, KC_A)","MT(MOD_LSFT, KC_A)",
+    "LSFT(KC_A)","LCTL(KC_A)","LALT(KC_A)","LGUI(KC_A)",
+    "LM(1, MOD_LSFT)","LM(1, MOD_LCTL)"
+  ]
+};
+
+function allKnownKeycodes() {
+  const set = new Set();
+  Object.values(KEYCODE_CATALOG).forEach(list => list.forEach(k => set.add(k)));
+  ORIGINAL_LAYERS.forEach(l => l.keys.forEach(k => set.add(k)));
+  return Array.from(set);
+}
+
+// ===================== PAREN-AWARE ARGUMENT SPLITTER =====================
+// Splits a LAYOUT(...) argument-list string into individual arguments,
+// only treating a comma as a separator at nesting depth zero.
+// e.g. "KC_A, LT(1, KC_SPC), MO(1)" -> ["KC_A", "LT(1, KC_SPC)", "MO(1)"]
+function splitArgsAtDepthZero(str) {
+  const args = [];
+  let depth = 0;
+  let current = "";
+  for (let i = 0; i < str.length; i++) {
+    const ch = str[i];
+    if (ch === "(") { depth++; current += ch; }
+    else if (ch === ")") { depth--; current += ch; }
+    else if (ch === "," && depth === 0) {
+      args.push(current.trim());
+      current = "";
+    } else {
+      current += ch;
+    }
+  }
+  if (current.trim().length > 0) args.push(current.trim());
+  return args.filter(a => a.length > 0);
+}
+
+console.assert(
+  JSON.stringify(splitArgsAtDepthZero("KC_A, LT(1, KC_SPC), MO(1)")) ===
+  JSON.stringify(["KC_A", "LT(1, KC_SPC)", "MO(1)"]),
+  "paren-aware splitter must treat LT(1, KC_SPC) as one argument"
+);
+// ===================== EXPORT: layers -> keymap.c source =====================
+// CRITICAL: iterate by ascending layoutIndex (0..53), never by x/y or matrix.
+function formatLayoutArgs(keys) {
+  // Reconstruct the same visual grouping as the original file for readability:
+  // 4 rows of 12 (with a gap comment in spacing, not content) + thumb row of 6.
+  // We rely purely on layoutIndex order; the grouping below is cosmetic only.
+  const rows = [
+    keys.slice(0, 6), keys.slice(6, 12),
+    keys.slice(12, 18), keys.slice(18, 24),
+    keys.slice(24, 30), keys.slice(30, 36),
+    keys.slice(36, 42), keys.slice(42, 48),
+    keys.slice(48, 51), keys.slice(51, 54)
+  ];
+  const lineOf = (left, right) =>
+    left.map(k=>k+",").join(" ") + "    " + right.map(k=>k+",").join(" ");
+  const lines = [];
+  for (let i = 0; i < 8; i += 2) {
+    lines.push("        " + lineOf(rows[i], rows[i+1]));
+  }
+  const thumbLine = "                                            " +
+    rows[8].map(k=>k+",").join(" ") + "          " +
+    rows[9].map((k,idx) => idx===rows[9].length-1 ? k : k+",").join(" ");
+  return lines.join("\n") + "\n" + thumbLine;
+}
+
+function exportKeymapC(layers) {
+  const header =
+`// Copyright 2023 QMK
+// SPDX-License-Identifier: GPL-2.0-or-later
+
+#include QMK_KEYBOARD_H
+
+const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
+`;
+  const layerBlocks = layers.map((layer, i) => {
+    if (layer.keys.length !== 54) {
+      throw new Error(`Layer ${i} (${layer.name}) has ${layer.keys.length} keys, expected 54`);
+    }
+    const body = formatLayoutArgs(layer.keys);
+    const comma = i < layers.length - 1 ? "," : "";
+    return `    [${i}] = LAYOUT(\n${body}\n    )${comma}`;
+  });
+  return header + "\n" + layerBlocks.join("\n\n") + "\n};\n";
+}
+
+// ===================== IMPORT: keymap.c source -> layers =====================
+// Recognizes  [N] = LAYOUT( ...args... )  blocks. Parses args with the
+// paren-aware splitter so expressions like LT(1, KC_SPC) are one argument.
+function importKeymapC(source) {
+  const layerRegex = /\[(\d+)\]\s*=\s*LAYOUT\s*\(/g;
+  const layers = [];
+  let match;
+  while ((match = layerRegex.exec(source)) !== null) {
+    const layerIndex = parseInt(match[1], 10);
+    const openParenPos = match.index + match[0].length - 1; // position of "("
+    // Find the matching close paren by depth-tracking from just after "(".
+    let depth = 1;
+    let i = openParenPos + 1;
+    for (; i < source.length && depth > 0; i++) {
+      if (source[i] === "(") depth++;
+      else if (source[i] === ")") depth--;
+    }
+    if (depth !== 0) {
+      throw new Error(`Unbalanced parentheses for layer ${layerIndex}`);
+    }
+    const argsStr = source.slice(openParenPos + 1, i - 1);
+    const args = splitArgsAtDepthZero(argsStr.replace(/\/\/.*$/gm, "")); // strip line comments
+    if (args.length !== 54) {
+      throw new Error(`Layer ${layerIndex} has ${args.length} arguments, expected 54 (argument index must equal layoutIndex)`);
+    }
+    layers[layerIndex] = { name: layerIndex === 0 ? "Base" : (layerIndex === 1 ? "Fn" : `Layer ${layerIndex}`), keys: args };
+  }
+  if (layers.length === 0) throw new Error("No LAYOUT(...) blocks found");
+  // fill any gaps defensively (shouldn't happen with well-formed input)
+  for (let i = 0; i < layers.length; i++) {
+    if (!layers[i]) throw new Error(`Missing layer index ${i}`);
+  }
+  return layers;
+}
+
+// ===================== ROUND-TRIP VALIDATION =====================
+function validateRoundTrip(layers) {
+  const c = exportKeymapC(layers);
+  const reimported = importKeymapC(c);
+  if (reimported.length !== layers.length) return false;
+  for (let li = 0; li < layers.length; li++) {
+    if (reimported[li].keys.length !== 54) return false;
+    for (let idx = 0; idx < 54; idx++) {
+      if (reimported[li].keys[idx] !== layers[li].keys[idx]) return false; // argument index === layoutIndex check
+    }
+  }
+  return true;
+}
+/* ==================== APPLICATION STATE ==================== */
+const App = {
+  layers: JSON.parse(JSON.stringify(ORIGINAL_LAYERS)), // working copy, edited
+  activeLayer: 0,
+  effectiveMode: false,
+  moHeld: false,
+  moHeldLayer: null,
+  selectedIndex: null,   // currently focused/selected physical key (layoutIndex)
+  editingIndex: null,    // key open in the editor modal
+  clipboard: null,       // { code } for single-key copy/paste
+  pressedIndices: new Set(),
+  history: { stack: [], pointer: -1 }, // stack of layer-snapshots for undo/redo
+};
+
+function deepCloneLayers(layers) { return JSON.parse(JSON.stringify(layers)); }
+
+function pushHistory() {
+  // Truncate any redo branch, then push current state.
+  App.history.stack = App.history.stack.slice(0, App.history.pointer + 1);
+  App.history.stack.push(deepCloneLayers(App.layers));
+  App.history.pointer++;
+  // cap history to keep memory sane
+  if (App.history.stack.length > 200) {
+    App.history.stack.shift();
+    App.history.pointer--;
+  }
+}
+
+function initHistory() {
+  App.history.stack = [deepCloneLayers(App.layers)];
+  App.history.pointer = 0;
+}
+
+function undo() {
+  if (App.history.pointer <= 0) return;
+  App.history.pointer--;
+  App.layers = deepCloneLayers(App.history.stack[App.history.pointer]);
+  clampActiveLayer();
+  renderAll();
+}
+
+function redo() {
+  if (App.history.pointer >= App.history.stack.length - 1) return;
+  App.history.pointer++;
+  App.layers = deepCloneLayers(App.history.stack[App.history.pointer]);
+  clampActiveLayer();
+  renderAll();
+}
+
+function clampActiveLayer() {
+  if (App.activeLayer >= App.layers.length) App.activeLayer = App.layers.length - 1;
+}
+
+function isDirty() {
+  if (App.layers.length !== ORIGINAL_LAYERS.length) return true;
+  for (let li = 0; li < App.layers.length; li++) {
+    if (li >= ORIGINAL_LAYERS.length) return true;
+    if (App.layers[li].name !== ORIGINAL_LAYERS[li].name) return true;
+    for (let idx = 0; idx < 54; idx++) {
+      if (App.layers[li].keys[idx] !== ORIGINAL_LAYERS[li].keys[idx]) return true;
+    }
+  }
+  return false;
+}
+
+function isKeyModified(layerIdx, layoutIndex) {
+  if (layerIdx >= ORIGINAL_LAYERS.length) return true; // whole layer is new
+  return App.layers[layerIdx].keys[layoutIndex] !== ORIGINAL_LAYERS[layerIdx].keys[layoutIndex];
+}
+
+// Resolve the effective keycode for a layoutIndex at a given active layer,
+// falling through KC_TRNS down to lower layers. General for N layers.
+function resolveEffective(layoutIndex, activeLayer) {
+  for (let layer = activeLayer; layer >= 0; layer--) {
+    const code = App.layers[layer].keys[layoutIndex];
+    if (code !== "KC_TRNS") return code;
+  }
+  return "KC_TRNS";
+}
+
+// Which layers reference layer N via MO/TG/TO/DF(N)?
+function findLayerReferences(targetLayerIndex) {
+  const refs = []; // { layer, layoutIndex, code }
+  const re = /\b(MO|TG|TO|DF)\(\s*(\d+)/;
+  App.layers.forEach((layer, li) => {
+    layer.keys.forEach((code, idx) => {
+      const m = re.exec(code);
+      if (m && parseInt(m[2], 10) === targetLayerIndex) {
+        refs.push({ layer: li, layoutIndex: idx, code });
+      }
+    });
+  });
+  return refs;
+}
+/* ==================== RENDERING ==================== */
+const CELL_W = 64, CELL_H = 60, KEY_W = 58, KEY_H = 54;
+
+// Key DOM elements are created ONCE and updated in place on every render.
+// Destroying/recreating them on each render (the previous approach) tore
+// out listeners and pointer capture mid-gesture, which is what broke
+// double-click and MO hold/release. Never call grid.innerHTML = '' again
+// after the initial build.
+const keyElements = []; // indexed by layoutIndex
+
+function buildKeyboardOnce() {
+  const grid = document.getElementById('kbGrid');
+  grid.innerHTML = '';
+  PHYSICAL_KEYS.forEach((pk) => {
+    const idx = pk.layoutIndex;
+    const el = document.createElement('div');
+    el.className = 'key';
+    el.style.left = (pk.x * CELL_W) + 'px';
+    el.style.top = (pk.y * CELL_H) + 'px';
+    el.style.width = KEY_W + 'px';
+    el.style.height = KEY_H + 'px';
+    el.tabIndex = 0;
+    el.dataset.layoutIndex = idx;
+    el.setAttribute('role', 'button');
+
+    const label = document.createElement('div');
+    label.className = 'label';
+    el.appendChild(label);
+
+    const codeEl = document.createElement('div');
+    codeEl.className = 'code';
+    el.appendChild(codeEl);
+
+    const matrixEl = document.createElement('div');
+    matrixEl.className = 'matrix';
+    matrixEl.textContent = `[${pk.matrix[0]},${pk.matrix[1]}]`;
+    el.appendChild(matrixEl);
+
+    const dot = document.createElement('div');
+    dot.className = 'modified-dot';
+    el.appendChild(dot);
+
+    attachKeyInteractions(el, idx, pk);
+    grid.appendChild(el);
+    keyElements[idx] = { el, label, codeEl };
+  });
+
+  const grid2 = document.getElementById('kbGrid');
+  grid2.style.width = (13 * CELL_W) + 'px';
+  grid2.style.height = (5 * CELL_H) + 'px';
+}
+
+function renderKeyboard() {
+  if (keyElements.length === 0) buildKeyboardOnce();
+  const layer = App.activeLayer;
+
+  PHYSICAL_KEYS.forEach((pk) => {
+    const idx = pk.layoutIndex;
+    let code;
+    if (App.effectiveMode) {
+      code = resolveEffective(idx, layer);
+    } else if (App.moHeld && layer < App.moHeldLayer) {
+      code = resolveEffective(idx, App.moHeldLayer);
+    } else {
+      code = App.layers[layer].keys[idx];
+    }
+
+    const { el, label, codeEl } = keyElements[idx];
+    label.textContent = humanLabel(code);
+    codeEl.textContent = code;
+    el.setAttribute('aria-label', `Physical key ${idx}, matrix ${pk.matrix.join(',')}, currently ${code}`);
+
+    el.classList.toggle('transparent', code === 'KC_TRNS');
+    el.classList.toggle('layer-active', /^MO\(|^TG\(|^TO\(|^DF\(|^LM\(/.test(code));
+    el.classList.toggle('pressed', App.pressedIndices.has(idx));
+    el.classList.toggle('editing', App.selectedIndex === idx);
+    el.classList.toggle('is-modified', isKeyModified(layer, idx) && !App.effectiveMode);
+  });
+}
+
+function renderControls() {
+  const c = document.getElementById('mainControls');
+  c.innerHTML = '';
+
+  App.layers.forEach((layer, i) => {
+    const btn = document.createElement('button');
+    btn.className = 'btn' + (App.activeLayer === i && !App.effectiveMode ? ' active' : '');
+    btn.textContent = `Layer ${i} · ${layer.name}`;
+    btn.addEventListener('click', () => {
+      App.activeLayer = i;
+      App.effectiveMode = false;
+      renderAll();
+    });
+    c.appendChild(btn);
+  });
+
+  const effBtn = document.createElement('button');
+  effBtn.className = 'btn' + (App.effectiveMode ? ' active' : '');
+  effBtn.textContent = 'Effective layout';
+  effBtn.addEventListener('click', () => {
+    App.effectiveMode = !App.effectiveMode;
+    renderAll();
+  });
+  c.appendChild(effBtn);
+
+  c.appendChild(divider());
+
+  const manageLayersBtn = document.createElement('button');
+  manageLayersBtn.className = 'btn';
+  manageLayersBtn.textContent = 'Manage layers';
+  manageLayersBtn.addEventListener('click', openLayerManager);
+  c.appendChild(manageLayersBtn);
+
+  const ioBtn = document.createElement('button');
+  ioBtn.className = 'btn';
+  ioBtn.textContent = 'Import / Export';
+  ioBtn.addEventListener('click', () => openIoModal());
+  c.appendChild(ioBtn);
+
+  c.appendChild(divider());
+
+  const undoBtn = document.createElement('button');
+  undoBtn.className = 'btn';
+  undoBtn.textContent = 'Undo';
+  undoBtn.disabled = App.history.pointer <= 0;
+  undoBtn.addEventListener('click', undo);
+  c.appendChild(undoBtn);
+
+  const redoBtn = document.createElement('button');
+  redoBtn.className = 'btn';
+  redoBtn.textContent = 'Redo';
+  redoBtn.disabled = App.history.pointer >= App.history.stack.length - 1;
+  redoBtn.addEventListener('click', redo);
+  c.appendChild(redoBtn);
+
+  c.appendChild(divider());
+
+  const resetViewBtn = document.createElement('button');
+  resetViewBtn.className = 'btn';
+  resetViewBtn.textContent = 'Reset view';
+  resetViewBtn.title = 'Return to Layer 0, clear selection — keeps your edits';
+  resetViewBtn.addEventListener('click', resetView);
+  c.appendChild(resetViewBtn);
+
+  const revertBtn = document.createElement('button');
+  revertBtn.className = 'btn danger';
+  revertBtn.textContent = 'Revert changes';
+  revertBtn.title = 'Restore the original supplied keymap';
+  revertBtn.addEventListener('click', confirmRevert);
+  c.appendChild(revertBtn);
+
+  c.appendChild(divider());
+
+  const indicator = document.createElement('span');
+  const dirty = isDirty();
+  indicator.className = 'modified-indicator ' + (dirty ? 'dirty' : 'clean');
+  indicator.textContent = dirty ? '● Modified' : '✓ Original keymap';
+  c.appendChild(indicator);
+}
+
+function divider() {
+  const d = document.createElement('span');
+  d.className = 'divider-v';
+  return d;
+}
+
+function renderStatus() {
+  const s = document.getElementById('statusLine');
+  const layer = App.layers[App.activeLayer];
+  if (App.effectiveMode) {
+    s.textContent = `Viewing Layer ${App.activeLayer} · ${layer.name} · effective fall-through enabled`;
+  } else if (App.moHeld && App.layers[App.moHeldLayer]) {
+    s.textContent = `Viewing Layer ${App.moHeldLayer} · ${App.layers[App.moHeldLayer].name} (MO held)`;
+  } else {
+    s.textContent = `Viewing Layer ${App.activeLayer} · ${layer.name} — click keys or press your physical keyboard`;
+  }
+}
+
+function renderInfoCards() {
+  const el = document.getElementById('infoCards');
+  el.innerHTML = `
+    <div class="card">
+      <h3>Interaction</h3>
+      <ul>
+        <li>Click a key to briefly highlight it</li>
+        <li>Double-click a key to open its editor</li>
+        <li>Press your physical keyboard to try the layout</li>
+        <li>Hold the rendered <code>MO(1)</code> key (mouse/touch) to preview Layer 1</li>
+        <li>Release it to return to Layer 0</li>
+      </ul>
+    </div>
+    <div class="card">
+      <h3>QMK semantics</h3>
+      <ul>
+        <li><code>KC_TRNS</code> falls through to the layer below it</li>
+        <li><code>MO(n)</code> activates layer n while held</li>
+        <li>Effective layout resolves transparency down to the base layer</li>
+      </ul>
+    </div>
+    <div class="card">
+      <h3>Editing legend</h3>
+      <div class="legend-row"><span class="legend-swatch" style="background:linear-gradient(180deg,#2d333b,#22272e)"></span> Original value</div>
+      <div class="legend-row"><span class="legend-swatch" style="background:linear-gradient(180deg,#2d333b,#22272e);position:relative;box-shadow:0 0 0 2px #d29922 inset"></span> Modified value (orange dot)</div>
+      <div class="legend-row"><span class="legend-swatch" style="background-image:repeating-linear-gradient(135deg,#262c36 0 4px,#22272e 4px 8px)"></span> Transparent (KC_TRNS)</div>
+      <div class="legend-row"><span class="legend-swatch" style="background:linear-gradient(180deg,#5f3aa8,#4a2c85)"></span> Layer key</div>
+      <div class="legend-row"><span class="legend-swatch" style="background:linear-gradient(180deg,#1f6feb,#1857b8)"></span> Currently pressed</div>
+    </div>
+    <div class="card">
+      <h3>Matrix</h3>
+      <div class="kv">
+        Rows: GP2–GP6<br>
+        Columns: GP7–GP12<br>
+        Diode direction: COL2ROW<br>
+        Split serial: vendor driver<br>
+        Processor: RP2040<br>
+        USB VID: 0xFEED<br>
+        USB PID: 0x1212
+      </div>
+    </div>
+  `;
+}
+
+function renderAll() {
+  renderKeyboard();
+  renderControls();
+  renderStatus();
+  renderInfoCards();
+}
+/* ==================== KEY INTERACTIONS ==================== */
+// Key elements are created once (see buildKeyboardOnce) and never destroyed,
+// so listeners attached here stay valid for the life of the app — a render
+// only updates text/classes on the existing node, it never replaces it.
+
+function attachKeyInteractions(el, layoutIndex, pk) {
+  // Plain click: select + brief flash.
+  el.addEventListener('click', () => {
+    App.selectedIndex = layoutIndex;
+    flashPressed(layoutIndex);
+  });
+
+  // Double-click: open the editor. Safe now that render() no longer
+  // recreates the element mid-gesture.
+  el.addEventListener('dblclick', () => {
+    openKeyEditor(layoutIndex);
+  });
+
+  // Right-click / context menu: also opens the editor, in place of the
+  // browser's context menu.
+  el.addEventListener('contextmenu', (e) => {
+    e.preventDefault();
+    openKeyEditor(layoutIndex);
+  });
+
+  // Hold-to-preview for any MO(n) key: press and hold activates that layer,
+  // releasing (anywhere, even off the key) returns to normal. Tracked at
+  // the document level so a drag-off or a fast release can never get stuck.
+  el.addEventListener('pointerdown', () => {
+    App.selectedIndex = layoutIndex;
+    const code = App.layers[App.activeLayer].keys[layoutIndex];
+    const m = /^MO\(\s*(\d+)\s*\)$/.exec(code);
+    if (m) {
+      startMoHold(parseInt(m[1], 10));
+    }
+  });
+
+  el.addEventListener('keydown', (e) => {
+    if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+    if (e.key === 'e' || e.key === 'E') {
+      e.preventDefault();
+      openKeyEditor(layoutIndex);
+    }
+  });
+
+  el.addEventListener('focus', () => {
+    App.selectedIndex = layoutIndex;
+  });
+}
+
+// ---- MO(n) hold/release, tracked globally so releases always land ----
+function startMoHold(targetLayer) {
+  App.moHeld = true;
+  App.moHeldLayer = targetLayer;
+  renderKeyboard();
+  renderStatus();
+}
+function endMoHold() {
+  if (!App.moHeld) return;
+  App.moHeld = false;
+  App.moHeldLayer = null;
+  renderKeyboard();
+  renderStatus();
+}
+document.addEventListener('pointerup', endMoHold);
+document.addEventListener('pointercancel', endMoHold);
+
+function flashPressed(layoutIndex) {
+  App.pressedIndices.add(layoutIndex);
+  renderKeyboard();
+  setTimeout(() => {
+    App.pressedIndices.delete(layoutIndex);
+    renderKeyboard();
+  }, 140);
+}
+
+/* ==================== PHYSICAL KEYBOARD MAPPING ==================== */
+// Maps KeyboardEvent.code -> the QMK keycode we search for on the active layer.
+// We resolve to a physical key by finding which layoutIndex currently holds
+// that QMK code on the *base* layer mapping most users expect (layer 0),
+// but to avoid ambiguity for duplicated codes (two shifts, two ctrls) we use
+// an explicit code->layoutIndex table built from the *original* physical
+// intent (left/right), independent of which QMK keycode currently sits there.
+// This table is derived once from ORIGINAL_LAYERS layer 0 codes plus known
+// left/right disambiguation, and it identifies the physical key by its
+// physical position — not by scanning the current (possibly edited) label.
+const BROWSER_CODE_TO_LAYOUT_INDEX = buildBrowserCodeMap();
+
+function buildBrowserCodeMap() {
+  // Build code->layoutIndex from the ORIGINAL layer-0 QMK codes, since that
+  // mapping reflects fixed physical intent (e.g. index of KC_LSFT vs KC_RSFT).
+  const codeToIndex = {};
+  const base = ORIGINAL_LAYERS[0].keys;
+  const qmkToBrowser = {
+    KC_ESC: 'Escape', KC_TAB: 'Tab', KC_BSPC: 'Backspace', KC_ENT: 'Enter', KC_SPC: 'Space',
+    KC_LCTL: 'ControlLeft', KC_LSFT: 'ShiftLeft', KC_LGUI: 'MetaLeft', KC_LALT: 'AltLeft',
+    KC_RCTL: 'ControlRight', KC_RSFT: 'ShiftRight', KC_RGUI: 'MetaRight', KC_RALT: 'AltRight',
+    KC_MINS: 'Minus', KC_EQL: 'Equal', KC_LBRC: 'BracketLeft', KC_RBRC: 'BracketRight',
+    KC_BSLS: 'Backslash', KC_SCLN: 'Semicolon', KC_QUOT: 'Quote', KC_COMM: 'Comma',
+    KC_DOT: 'Period', KC_SLSH: 'Slash', KC_GRV: 'Backquote',
+    KC_LEFT: 'ArrowLeft', KC_DOWN: 'ArrowDown', KC_UP: 'ArrowUp', KC_RGHT: 'ArrowRight',
+    KC_PGUP: 'PageUp', KC_PGDN: 'PageDown', KC_HOME: 'Home', KC_END: 'End', KC_DEL: 'Delete',
+  };
+  base.forEach((code, idx) => {
+    if (qmkToBrowser[code]) codeToIndex[qmkToBrowser[code]] = idx;
+    let m;
+    if ((m = /^KC_([A-Z])$/.exec(code))) codeToIndex['Key' + m[1]] = idx;
+    if ((m = /^KC_(\d)$/.exec(code))) codeToIndex['Digit' + m[1]] = idx;
+  });
+  // Layer-1 F-keys use the same physical indices as layer 0's number/letter row
+  const fn = ORIGINAL_LAYERS[1] ? ORIGINAL_LAYERS[1].keys : [];
+  fn.forEach((code, idx) => {
+    const m = /^KC_F(\d{1,2})$/.exec(code);
+    if (m && !codeToIndex['F' + m[1]]) codeToIndex['F' + m[1]] = idx;
+  });
+  return codeToIndex;
+}
+
+document.addEventListener('keydown', (e) => {
+  if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+  if (isAnyModalOpen()) return;
+
+  if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'z') {
+    e.preventDefault();
+    if (e.shiftKey) redo(); else undo();
+    return;
+  }
+
+  const idx = BROWSER_CODE_TO_LAYOUT_INDEX[e.code];
+  if (idx === undefined) return;
+  if (e.repeat) return; // ignore repeat for press animation
+  e.preventDefault();
+  App.pressedIndices.add(idx);
+  renderKeyboard();
+});
+
+document.addEventListener('keyup', (e) => {
+  const idx = BROWSER_CODE_TO_LAYOUT_INDEX[e.code];
+  if (idx === undefined) return;
+  App.pressedIndices.delete(idx);
+  renderKeyboard();
+});
+
+window.addEventListener('blur', () => {
+  App.pressedIndices.clear();
+  App.moHeld = false;
+  App.moHeldLayer = null;
+  renderAll();
+});
+
+function resetView() {
+  App.activeLayer = 0;
+  App.effectiveMode = false;
+  App.moHeld = false;
+  App.moHeldLayer = null;
+  App.selectedIndex = null;
+  App.pressedIndices.clear();
+  renderAll();
+}
+/* ==================== KEY EDITOR MODAL ==================== */
+let pickerState = { category: 'All', query: '', pendingCode: null };
+
+function openKeyEditor(layoutIndex) {
+  App.editingIndex = layoutIndex;
+  App.selectedIndex = layoutIndex;
+  pickerState = { category: 'All', query: '', pendingCode: App.layers[App.activeLayer].keys[layoutIndex] };
+  renderKeyEditor();
+  document.getElementById('editorOverlay').hidden = false;
+  renderKeyboard();
+  setTimeout(() => {
+    const search = document.getElementById('pickerSearch');
+    if (search) search.focus();
+  }, 30);
+}
+
+function closeKeyEditor() {
+  document.getElementById('editorOverlay').hidden = true;
+  App.editingIndex = null;
+  renderKeyboard();
+}
+
+function renderKeyEditor() {
+  const idx = App.editingIndex;
+  const pk = PHYSICAL_KEYS[idx];
+  const layer = App.layers[App.activeLayer];
+  const currentCode = layer.keys[idx];
+
+  document.getElementById('editorTitle').textContent = `Edit key · layoutIndex ${idx}`;
+
+  const body = document.getElementById('editorBody');
+  body.innerHTML = `
+    <div class="key-meta-grid">
+      <div class="meta-item"><div class="meta-label">Physical position</div><div class="meta-value">x=${pk.x}, y=${pk.y}</div></div>
+      <div class="meta-item"><div class="meta-label">Matrix coordinate</div><div class="meta-value">[${pk.matrix[0]}, ${pk.matrix[1]}]</div></div>
+      <div class="meta-item"><div class="meta-label">Current layer</div><div class="meta-value">${App.activeLayer} · ${layer.name}</div></div>
+      <div class="meta-item"><div class="meta-label">layoutIndex</div><div class="meta-value">${idx}</div></div>
+      <div class="meta-item"><div class="meta-label">Human-readable label</div><div class="meta-value">${humanLabel(currentCode)}</div></div>
+      <div class="meta-item"><div class="meta-label">Current QMK keycode</div><div class="meta-value">${currentCode}</div></div>
+    </div>
+
+    <div class="current-code-box" id="pendingCodeBox">${pickerState.pendingCode}</div>
+
+    <input type="text" class="picker-search" id="pickerSearch" placeholder="Search keycodes…" value="${pickerState.query}">
+
+    <div class="picker-categories" id="pickerCategories"></div>
+    <div class="picker-grid" id="pickerGrid"></div>
+
+    <div class="advanced-entry">
+      <label for="advancedInput">Advanced: enter a QMK expression directly</label>
+      <input type="text" id="advancedInput" placeholder="e.g. LT(1, KC_SPC), MT(MOD_LCTL, KC_A), MO(2)" value="${isCustomExpr(pickerState.pendingCode) ? pickerState.pendingCode : ''}">
+      <div class="advanced-hint">Expressions are stored exactly as typed — they are not treated as equivalent to ordinary keycodes.</div>
+    </div>
+
+    <div class="modal-footer">
+      <button class="btn" id="editorCancel">Cancel</button>
+      <button class="btn primary" id="editorApply">Apply (Enter)</button>
+    </div>
+  `;
+
+  renderPickerCategories();
+  renderPickerGrid();
+
+  document.getElementById('pickerSearch').addEventListener('input', (e) => {
+    pickerState.query = e.target.value;
+    renderPickerGrid();
+  });
+  document.getElementById('advancedInput').addEventListener('input', (e) => {
+    if (e.target.value.trim()) {
+      pickerState.pendingCode = e.target.value.trim();
+      updatePendingCodeBox();
+    }
+  });
+  document.getElementById('editorCancel').addEventListener('click', closeKeyEditor);
+  document.getElementById('editorApply').addEventListener('click', applyKeyEdit);
+  document.getElementById('editorClose').onclick = closeKeyEditor;
+}
+
+function isCustomExpr(code) {
+  return !allKnownKeycodes().includes(code);
+}
+
+function renderPickerCategories() {
+  const el = document.getElementById('pickerCategories');
+  const cats = ['All', ...Object.keys(KEYCODE_CATALOG), 'Used in this keymap'];
+  el.innerHTML = '';
+  cats.forEach(cat => {
+    const btn = document.createElement('button');
+    btn.className = 'picker-cat-btn' + (pickerState.category === cat ? ' active' : '');
+    btn.textContent = cat;
+    btn.addEventListener('click', () => {
+      pickerState.category = cat;
+      renderPickerCategories();
+      renderPickerGrid();
+    });
+    el.appendChild(btn);
+  });
+}
+
+function usedKeycodesInKeymap() {
+  const set = new Set();
+  App.layers.forEach(l => l.keys.forEach(k => set.add(k)));
+  return Array.from(set);
+}
+
+function renderPickerGrid() {
+  const el = document.getElementById('pickerGrid');
+  let list;
+  if (pickerState.category === 'All') {
+    list = allKnownKeycodes();
+  } else if (pickerState.category === 'Used in this keymap') {
+    list = usedKeycodesInKeymap();
+  } else {
+    list = KEYCODE_CATALOG[pickerState.category] || [];
+  }
+  const q = pickerState.query.trim().toUpperCase();
+  if (q) list = list.filter(k => k.toUpperCase().includes(q) || humanLabel(k).toUpperCase().includes(q));
+
+  el.innerHTML = '';
+  list.forEach(code => {
+    const item = document.createElement('div');
+    item.className = 'picker-item' + (pickerState.pendingCode === code ? ' selected' : '');
+    item.textContent = code;
+    item.title = humanLabel(code);
+    item.addEventListener('click', () => {
+      pickerState.pendingCode = code;
+      document.getElementById('advancedInput').value = '';
+      updatePendingCodeBox();
+      renderPickerGrid();
+    });
+    el.appendChild(item);
+  });
+  if (list.length === 0) {
+    const empty = document.createElement('div');
+    empty.style.cssText = 'grid-column:1/-1;color:var(--text-faint);font-size:12px;text-align:center;padding:12px;';
+    empty.textContent = 'No matching keycodes — use advanced entry below.';
+    el.appendChild(empty);
+  }
+}
+
+function updatePendingCodeBox() {
+  const box = document.getElementById('pendingCodeBox');
+  if (box) box.textContent = pickerState.pendingCode;
+}
+
+function applyKeyEdit() {
+  const idx = App.editingIndex;
+  const newCode = pickerState.pendingCode.trim();
+  if (!newCode) return;
+  const oldCode = App.layers[App.activeLayer].keys[idx];
+  if (newCode !== oldCode) {
+    App.layers[App.activeLayer].keys[idx] = newCode;
+    pushHistory();
+  }
+  closeKeyEditor();
+  renderAll();
+}
+
+document.addEventListener('keydown', (e) => {
+  const overlay = document.getElementById('editorOverlay');
+  if (overlay.hidden) return;
+  if (e.key === 'Escape') { closeKeyEditor(); }
+  else if (e.key === 'Enter' && e.target.id !== 'advancedInput') {
+    // allow Enter in search box too, but not while typing multi-line elsewhere
+    applyKeyEdit();
+  } else if (e.key === 'Enter' && e.target.id === 'advancedInput') {
+    applyKeyEdit();
+  }
+});
+/* ==================== LAYER MANAGER MODAL ==================== */
+function openLayerManager() {
+  renderLayerManager();
+  document.getElementById('layerOverlay').hidden = false;
+}
+function closeLayerManager() {
+  document.getElementById('layerOverlay').hidden = true;
+}
+
+function renderLayerManager() {
+  const body = document.getElementById('layerBody');
+  body.innerHTML = `
+    <div class="layer-list" id="layerList"></div>
+    <div class="modal-footer" style="justify-content:space-between;">
+      <button class="btn primary" id="addLayerBtn">Add layer</button>
+      <button class="btn" id="layerDoneBtn">Done</button>
+    </div>
+  `;
+  const list = document.getElementById('layerList');
+  App.layers.forEach((layer, i) => {
+    const row = document.createElement('div');
+    row.className = 'layer-row';
+    row.innerHTML = `
+      <span class="layer-index-badge">${i}</span>
+      <input type="text" class="layer-name-input" data-layer="${i}" value="${escapeHtml(layer.name)}">
+    `;
+    const delBtn = document.createElement('button');
+    delBtn.className = 'btn danger';
+    delBtn.textContent = 'Delete';
+    delBtn.disabled = i === 0;
+    delBtn.title = i === 0 ? 'Layer 0 cannot be deleted' : 'Delete this layer';
+    delBtn.addEventListener('click', () => confirmDeleteLayer(i));
+    row.appendChild(delBtn);
+    list.appendChild(row);
+  });
+
+  list.querySelectorAll('.layer-name-input').forEach(input => {
+    input.addEventListener('change', (e) => {
+      const li = parseInt(e.target.dataset.layer, 10);
+      const newName = e.target.value.trim() || `Layer ${li}`;
+      if (App.layers[li].name !== newName) {
+        App.layers[li].name = newName;
+        pushHistory();
+        renderAll();
+      }
+    });
+  });
+
+  document.getElementById('addLayerBtn').addEventListener('click', addLayer);
+  document.getElementById('layerDoneBtn').addEventListener('click', closeLayerManager);
+  document.getElementById('layerClose').onclick = closeLayerManager;
+}
+
+function escapeHtml(s) {
+  return s.replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+
+function addLayer() {
+  const newIndex = App.layers.length;
+  App.layers.push({
+    name: `Layer ${newIndex}`,
+    keys: new Array(54).fill('KC_TRNS')
+  });
+  pushHistory();
+  renderLayerManager();
+  renderAll();
+}
+
+function confirmDeleteLayer(index) {
+  if (index === 0) return;
+  const refs = findLayerReferences(index);
+  const body = document.getElementById('confirmBody');
+  document.getElementById('confirmTitle').textContent = `Delete Layer ${index} · ${App.layers[index].name}?`;
+  body.innerHTML = `
+    <p>This removes the layer permanently. This cannot be undone from this dialog (though the editor's Undo still works).</p>
+    ${refs.length > 0 ? `
+      <div class="warn-box">
+        ${refs.length} key${refs.length === 1 ? '' : 's'} elsewhere reference this layer (MO/TG/TO/DF). 
+        Deleting it will leave those references pointing at a layer index that no longer means what it did.
+        We will not silently renumber other layer references for you — please check them after deleting.
+      </div>
+    ` : ''}
+    <div class="modal-footer">
+      <button class="btn" id="cancelDeleteLayer">Cancel</button>
+      <button class="btn danger" id="confirmDeleteLayerBtn">Delete layer</button>
+    </div>
+  `;
+  document.getElementById('confirmOverlay').hidden = false;
+  document.getElementById('confirmClose').onclick = () => { document.getElementById('confirmOverlay').hidden = true; };
+  document.getElementById('cancelDeleteLayer').onclick = () => { document.getElementById('confirmOverlay').hidden = true; };
+  document.getElementById('confirmDeleteLayerBtn').onclick = () => {
+    App.layers.splice(index, 1);
+    if (App.activeLayer >= App.layers.length) App.activeLayer = App.layers.length - 1;
+    pushHistory();
+    document.getElementById('confirmOverlay').hidden = true;
+    renderLayerManager();
+    renderAll();
+  };
+}
+
+function confirmRevert() {
+  const body = document.getElementById('confirmBody');
+  document.getElementById('confirmTitle').textContent = 'Revert all changes?';
+  body.innerHTML = `
+    <p>This restores the original supplied keymap and discards all edits, added layers, and renames.</p>
+    <div class="modal-footer">
+      <button class="btn" id="cancelRevert">Cancel</button>
+      <button class="btn danger" id="confirmRevertBtn">Revert changes</button>
+    </div>
+  `;
+  document.getElementById('confirmOverlay').hidden = false;
+  document.getElementById('confirmClose').onclick = () => { document.getElementById('confirmOverlay').hidden = true; };
+  document.getElementById('cancelRevert').onclick = () => { document.getElementById('confirmOverlay').hidden = true; };
+  document.getElementById('confirmRevertBtn').onclick = () => {
+    App.layers = deepCloneLayers(ORIGINAL_LAYERS);
+    App.activeLayer = 0;
+    App.effectiveMode = false;
+    App.selectedIndex = null;
+    pushHistory();
+    document.getElementById('confirmOverlay').hidden = true;
+    renderAll();
+  };
+}
+
+function isAnyModalOpen() {
+  return !document.getElementById('editorOverlay').hidden ||
+         !document.getElementById('layerOverlay').hidden ||
+         !document.getElementById('ioOverlay').hidden ||
+         !document.getElementById('confirmOverlay').hidden;
+}
+
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape') {
+    if (!document.getElementById('layerOverlay').hidden) closeLayerManager();
+    else if (!document.getElementById('ioOverlay').hidden) closeIoModal();
+    else if (!document.getElementById('confirmOverlay').hidden) document.getElementById('confirmOverlay').hidden = true;
+  }
+});
+/* ==================== IMPORT / EXPORT MODAL ==================== */
+let ioTab = 'export-c';
+
+function openIoModal() {
+  ioTab = 'export-c';
+  renderIoModal();
+  document.getElementById('ioOverlay').hidden = false;
+}
+function closeIoModal() {
+  document.getElementById('ioOverlay').hidden = true;
+}
+
+function renderIoModal() {
+  const body = document.getElementById('ioBody');
+  body.innerHTML = `
+    <div class="export-tabs">
+      <button class="export-tab" data-tab="export-c">Export keymap.c</button>
+      <button class="export-tab" data-tab="export-json">Export JSON</button>
+      <button class="export-tab" data-tab="import-c">Import keymap.c</button>
+      <button class="export-tab" data-tab="storage">Save to browser</button>
+    </div>
+    <div id="ioTabContent"></div>
+  `;
+  body.querySelectorAll('.export-tab').forEach(btn => {
+    btn.classList.toggle('active', btn.dataset.tab === ioTab);
+    btn.addEventListener('click', () => { ioTab = btn.dataset.tab; renderIoModal(); });
+  });
+  document.getElementById('ioClose').onclick = closeIoModal;
+
+  const content = document.getElementById('ioTabContent');
+  if (ioTab === 'export-c') {
+    let source, valid, err;
+    try {
+      source = exportKeymapC(App.layers);
+      valid = validateRoundTrip(App.layers);
+    } catch (e) { err = e.message; }
+    content.innerHTML = `
+      ${err ? `<div class="io-message err">${escapeHtml(err)}</div>` :
+        `<div class="io-message ${valid ? 'ok' : 'err'}">${valid ? 'Round-trip validated: export → import produces an identical keymap.' : 'Warning: round-trip validation failed.'}</div>
+         <div class="export-output" style="margin-top:10px;">${escapeHtml(source)}</div>
+         <div class="modal-footer">
+           <button class="btn primary" id="copyExportC">Copy to clipboard</button>
+           <button class="btn" id="downloadExportC">Download keymap.c</button>
+         </div>`}
+    `;
+    if (!err) {
+      document.getElementById('copyExportC').addEventListener('click', () => copyText(source));
+      document.getElementById('downloadExportC').addEventListener('click', () => downloadFile('keymap.c', source));
+    }
+  } else if (ioTab === 'export-json') {
+    const json = JSON.stringify({
+      keyboard: 'silakka54',
+      layerNames: App.layers.map(l => l.name),
+      layers: App.layers.map(l => l.keys),
+      layoutIndexRange: [0, 53],
+      metadata: { exportedAt: new Date().toISOString(), tool: 'silakka54-keymap-editor' }
+    }, null, 2);
+    content.innerHTML = `
+      <div class="export-output">${escapeHtml(json)}</div>
+      <div class="modal-footer">
+        <button class="btn primary" id="copyExportJson">Copy to clipboard</button>
+        <button class="btn" id="downloadExportJson">Download keymap.json</button>
+      </div>
+    `;
+    document.getElementById('copyExportJson').addEventListener('click', () => copyText(json));
+    document.getElementById('downloadExportJson').addEventListener('click', () => downloadFile('keymap.json', json));
+  } else if (ioTab === 'import-c') {
+    content.innerHTML = `
+      <textarea class="import-textarea" id="importTextarea" placeholder="Paste keymap.c source here…"></textarea>
+      <div class="modal-footer">
+        <button class="btn primary" id="doImportC">Import</button>
+      </div>
+      <div id="importMessage"></div>
+    `;
+    document.getElementById('doImportC').addEventListener('click', () => {
+      const src = document.getElementById('importTextarea').value;
+      const msgEl = document.getElementById('importMessage');
+      try {
+        const imported = importKeymapC(src);
+        const ok = validateRoundTrip(imported);
+        App.layers = imported;
+        App.activeLayer = 0;
+        App.effectiveMode = false;
+        pushHistory();
+        msgEl.innerHTML = `<div class="io-message ${ok ? 'ok' : 'err'}">Imported ${imported.length} layer(s) successfully.${ok ? ' Round-trip validated.' : ' Warning: round-trip check failed.'}</div>`;
+        renderAll();
+      } catch (e) {
+        msgEl.innerHTML = `<div class="io-message err">${escapeHtml(e.message)}</div>`;
+      }
+    });
+  } else if (ioTab === 'storage') {
+    const hasSaved = !!localStorage.getItem('silakka54_keymap');
+    content.innerHTML = `
+      <p style="font-size:13px;color:var(--text-dim);margin-bottom:14px;">
+        Save your edited keymap in this browser's local storage. This never touches the original hardware layout definition.
+      </p>
+      <div class="modal-footer" style="justify-content:flex-start;">
+        <button class="btn primary" id="saveStorageBtn">Save</button>
+        <button class="btn" id="loadStorageBtn" ${hasSaved ? '' : 'disabled'}>Load</button>
+        <button class="btn danger" id="clearStorageBtn" ${hasSaved ? '' : 'disabled'}>Clear saved keymap</button>
+      </div>
+      <div id="storageMessage"></div>
+    `;
+    document.getElementById('saveStorageBtn').addEventListener('click', () => {
+      localStorage.setItem('silakka54_keymap', JSON.stringify(App.layers));
+      document.getElementById('storageMessage').innerHTML = `<div class="io-message ok">Saved.</div>`;
+      renderIoModal();
+    });
+    document.getElementById('loadStorageBtn')?.addEventListener('click', () => {
+      try {
+        const data = JSON.parse(localStorage.getItem('silakka54_keymap'));
+        data.forEach((l, i) => { if (l.keys.length !== 54) throw new Error(`Layer ${i} malformed`); });
+        App.layers = data;
+        App.activeLayer = 0;
+        pushHistory();
+        document.getElementById('storageMessage').innerHTML = `<div class="io-message ok">Loaded.</div>`;
+        renderAll();
+      } catch (e) {
+        document.getElementById('storageMessage').innerHTML = `<div class="io-message err">Could not load: ${escapeHtml(e.message)}</div>`;
+      }
+    });
+    document.getElementById('clearStorageBtn')?.addEventListener('click', () => {
+      localStorage.removeItem('silakka54_keymap');
+      document.getElementById('storageMessage').innerHTML = `<div class="io-message ok">Cleared.</div>`;
+      renderIoModal();
+    });
+  }
+}
+
+function copyText(text) {
+  navigator.clipboard?.writeText(text).catch(() => {});
+}
+
+function downloadFile(filename, content) {
+  const blob = new Blob([content], { type: 'text/plain' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = filename;
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
+/* ==================== COPY / PASTE ==================== */
+document.addEventListener('keydown', (e) => {
+  if (isAnyModalOpen()) return;
+  if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+  if (App.selectedIndex === null) return;
+  const idx = App.selectedIndex;
+
+  if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'c') {
+    App.clipboard = App.layers[App.activeLayer].keys[idx];
+  } else if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'v') {
+    if (App.clipboard !== null) {
+      App.layers[App.activeLayer].keys[idx] = App.clipboard;
+      pushHistory();
+      renderAll();
+    }
+  }
+});
+
+/* ==================== INIT ==================== */
+function init() {
+  initHistory();
+  renderAll();
+}
+init();
+
+</script>
+</body>
+</html>
